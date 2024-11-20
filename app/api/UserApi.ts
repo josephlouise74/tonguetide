@@ -58,6 +58,21 @@ export const getCurrentUser = async (id: string): Promise<{ success: boolean; me
 };
 
 
+export const updateCurrentUser = async (id: string, data: any): Promise<{ success: boolean; message: string; data: any }> => {
+    try {
+        console.log("idssss", id)
+        const response = await axios.put<{ success: boolean; message: string; data: any }>(
+            `http://192.168.0.124:8000/api/my/user/update/${id}`,
+            data
+        );
+        return response.data;
+    } catch (error) {
+        return handleError(error, 'updateCurrentUser');
+    }
+};
+
+
+
 export const signIn = async (data: any): Promise<{ success: boolean; token: string; message: string; data: any; user: any }> => {
     try {
         const response = await axios.post<{ success: boolean; token: string; message: string; data: any; user: any }>(

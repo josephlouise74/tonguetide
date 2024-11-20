@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Enhanced UserData interface with readonly properties for security
 export interface UserData {
@@ -171,11 +172,15 @@ export const authMiddleware = {
     // Enhanced logout with complete cleanup
     logout: async (): Promise<ApiResponse<void>> => {
         try {
+            // Clear all auth-related data
             await Promise.all([
                 authMiddleware.removeToken(),
                 SecureStore.deleteItemAsync(USER_DATA_KEY),
-                SecureStore.deleteItemAsync(SESSION_EXPIRY_KEY)
+                SecureStore.deleteItemAsync(SESSION_EXPIRY_KEY),
+                // Clear any other auth-related keys you might have
+                AsyncStorage.removeItem('user-storage'), // Clear Zustand persist storage
             ]);
+
             return { success: true };
         } catch (error) {
             return {

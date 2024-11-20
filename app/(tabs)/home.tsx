@@ -1,15 +1,15 @@
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import {
+    Dimensions,
     ScrollView,
     StyleSheet,
-    View,
-    TouchableOpacity,
     Text,
-    Dimensions,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { Link, Stack, useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 
 type ContentCard = {
     title: string;

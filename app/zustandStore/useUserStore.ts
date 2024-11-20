@@ -16,6 +16,7 @@ interface UserState {
     setUser: (user: User | null) => void;
     setToken: (token: string | null) => void;
     logout: () => void;
+    clearStore: () => void;
 }
 
 const useUserStore = create<UserState>()(
@@ -30,6 +31,8 @@ const useUserStore = create<UserState>()(
                 set({ token }),
             logout: () =>
                 set({ user: null, token: null, isAuthenticated: false }),
+            clearStore: () =>
+                set({}, true)
         }),
         {
             name: 'user-storage',

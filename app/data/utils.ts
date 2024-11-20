@@ -23,7 +23,32 @@ export const vocabulary = [
     { id: '22', word: 'Cheers', definition: 'Casual greeting or toast' },
     { id: '23', word: 'Have fun', definition: 'Wishing someone enjoyment' },
     { id: '24', word: 'Safe travels', definition: 'Wishing someone a safe journey' },
-    { id: '25', word: 'Well done', definition: 'Expression of praise for achievement' }
+    { id: '25', word: 'Well done', definition: 'Expression of praise for achievement' },
+    { id: '26', word: 'Nevertheless', definition: 'In spite of what was just mentioned' },
+    { id: '27', word: 'Furthermore', definition: 'In addition to what has been said' },
+    { id: '28', word: 'Consequently', definition: 'As a result of what was mentioned' },
+    { id: '29', word: 'In essence', definition: 'Fundamentally or basically speaking' },
+    { id: '30', word: 'Subsequently', definition: 'Following after something in time' },
+    { id: '31', word: 'Presumably', definition: 'Used to convey that something is probable' },
+    { id: '32', word: 'Albeit', definition: 'Although or even though' },
+    { id: '33', word: 'Thereof', definition: 'Of the thing just mentioned' },
+    { id: '34', word: 'Henceforth', definition: 'From this time forward' },
+    { id: '35', word: 'Invariably', definition: 'In every case or on every occasion' },
+    { id: '36', word: 'Quintessential', definition: 'Representing the most perfect example of a quality' },
+    { id: '37', word: 'Paradigm', definition: 'A typical example or pattern of something' },
+    { id: '38', word: 'Ephemeral', definition: 'Lasting for a very short time' },
+    { id: '39', word: 'Ubiquitous', definition: 'Present, appearing, or found everywhere' },
+    { id: '40', word: 'Surreptitious', definition: 'Kept secret, especially because improper' },
+    { id: '41', word: 'Perfunctory', definition: 'Carried out with minimal effort or reflection' },
+    { id: '42', word: 'Fastidious', definition: 'Very attentive to accuracy and detail' },
+    { id: '43', word: 'Circumlocution', definition: 'Using many words where fewer would do' },
+    { id: '44', word: 'Perspicacious', definition: 'Having a ready insight into things' },
+    { id: '45', word: 'Inexorable', definition: 'Impossible to stop or prevent' },
+    { id: '46', word: 'Methodology', definition: 'A system of methods used in a particular field' },
+    { id: '47', word: 'Empirical', definition: 'Based on observation or experience rather than theory' },
+    { id: '48', word: 'Cognizant', definition: 'Having knowledge or awareness' },
+    { id: '49', word: 'Paradigmatic', definition: 'Serving as a typical example' },
+    { id: '50', word: 'Ameliorate', definition: 'Make something bad or unsatisfactory better' }
 ];
 
 /* export const vocabulary = [

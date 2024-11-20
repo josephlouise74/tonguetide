@@ -1,5 +1,5 @@
 // app/(tabs)/profile.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Image, TouchableOpacity, ScrollView, Modal, ActivityIndicator, Switch } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { router } from 'expo-router';
@@ -8,7 +8,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as ImagePicker from 'expo-image-picker';
-import { signOut } from '../api/UserApi';
+import { getCurrentUser, signOut, updateCurrentUser } from '../api/UserApi';
 import Toast from 'react-native-toast-message';
 import { authMiddleware } from '../(auth)/authMiddleware';
 import useUserStore from '../zustandStore/useUserStore';
@@ -45,19 +45,29 @@ export default function ProfileScreen() {
     const [isLoading, setIsLoading] = useState(false);
     const [isMaintenanceModalVisible, setIsMaintenanceModalVisible] = useState(false);
     const [isDarkMode, setIsDarkMode] = useState(false);
-
+    const [userData, setUserData] = useState<any>(null);
     // Get user data from Zustand store
     const user = useUserStore((state: any) => state.user);
     const token = useUserStore((state: any) => state.token);
     const isAuthenticated = useUserStore((state: any) => state.isAuthenticated);
+    const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+    console.log("user", user)
+    useEffect(() => {
+        if (user && user._id) {
+            console.log("user", user._id);
+            const fetchUserData = async () => {
+                const response = await getCurrentUser(user._id as string);
+                setUserData(response.data);
+            };
+            fetchUserData();
+        } else {
+            console.log("User is not available");
+        }
+    }, [user]);
 
     // Add useEffect to log the data when component mounts
     React.useEffect(() => {
-        console.log('User Data from Store:', {
-            user,
-            token,
-            isAuthenticated
-        });
+
 
         // If you want to pre-fill the form with user data
         if (user) {
@@ -68,8 +78,6 @@ export default function ProfileScreen() {
             // Set other form fields as needed
         }
     }, [user]);
-
-
 
     const handleNavigate = (screen: keyof RootStackParamList) => {
         setIsMaintenanceModalVisible(true);
@@ -85,7 +93,8 @@ export default function ProfileScreen() {
                 throw new Error(response.message);
             }
 
-            // Then clear the local token
+            // Clear both Zustand store and AuthMiddleware data
+            useUserStore.getState().logout();
             const logoutResult = await authMiddleware.logout();
             if (!logoutResult.success) {
                 throw new Error(logoutResult.message);
@@ -135,8 +144,66 @@ export default function ProfileScreen() {
         */
     };
 
-    const onSubmit = (data: ProfileFormData) => {
-        console.log("Profile Updated:", data);
+    const onSubmit = async (data: ProfileFormData) => {
+        if (!user || !user._id) {
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'User data is not available',
+                position: 'bottom'
+            });
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const response = await updateCurrentUser(user._id as string, data as any);
+
+            if (!response.success) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Error',
+                    text2: response.message || 'Failed to update profile',
+                    position: 'bottom'
+                });
+                return;
+            }
+
+            // Update Zustand store
+            useUserStore.getState().setUser({
+                ...user,
+                ...data
+            });
+
+            // Update AuthMiddleware store
+            await authMiddleware.updateUserData({
+                ...data,
+                id: user._id
+            });
+
+            // Show success animation
+            setShowSuccessAnimation(true);
+            setTimeout(() => {
+                setShowSuccessAnimation(false);
+            }, 2000);
+
+            Toast.show({
+                type: 'success',
+                text1: 'Success',
+                text2: response.message || 'Profile updated successfully',
+                position: 'bottom'
+            });
+        } catch (error) {
+            console.log(error);
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: error instanceof Error ? error.message : 'Failed to update profile',
+                position: 'bottom'
+            });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -226,8 +293,16 @@ export default function ProfileScreen() {
                     {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
 
                     {/* Save Changes Button */}
-                    <TouchableOpacity style={styles.saveButton} onPress={handleSubmit(onSubmit)}>
-                        <Text style={styles.saveButtonText}>Save Changes</Text>
+                    <TouchableOpacity
+                        style={[styles.saveButton, isLoading && styles.disabledButton]}
+                        onPress={handleSubmit(onSubmit)}
+                        disabled={isLoading}
+                    >
+                        {isLoading ? (
+                            <ActivityIndicator color="white" />
+                        ) : (
+                            <Text style={styles.saveButtonText}>Save Changes</Text>
+                        )}
                     </TouchableOpacity>
                 </View>
 
@@ -333,6 +408,20 @@ export default function ProfileScreen() {
                         >
                             <Text style={styles.modalButtonText}>OK, Got it</Text>
                         </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={showSuccessAnimation}
+                onRequestClose={() => setShowSuccessAnimation(false)}
+            >
+                <View style={styles.successModalOverlay}>
+                    <View style={styles.successModalContent}>
+                        <Ionicons name="checkmark-circle" size={60} color="#4CAF50" />
+                        <Text style={styles.successModalText}>Profile Updated!</Text>
                     </View>
                 </View>
             </Modal>
@@ -473,4 +562,30 @@ const styles = StyleSheet.create({
         marginRight: 12,
     },
 
+    successModalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    successModalContent: {
+        backgroundColor: 'white',
+        padding: 30,
+        borderRadius: 15,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    successModalText: {
+        marginTop: 15,
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#333',
+    },
 });
