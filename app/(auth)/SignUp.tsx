@@ -1,21 +1,80 @@
 // SignUp.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useForm, Controller } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import { Ionicons } from '@expo/vector-icons';
+import { createUser, getAllUser } from '../api/UserApi';
+import Toast from 'react-native-toast-message';
+
+// Define the validation schema
+const signUpSchema = z.object({
+    firstName: z.string().min(1, 'First name is required'),
+    middleName: z.string().optional(),
+    lastName: z.string().min(1, 'Last name is required'),
+    email: z.string().email('Invalid email address'),
+    password: z
+        .string()
+        .min(8, 'Password must be at least 8 characters')
+        .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+        .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+        .regex(/[0-9]/, 'Password must contain at least one number'),
+});
+
+type SignUpFormData = z.infer<typeof signUpSchema>;
 
 const SignUpScreen: React.FC = () => {
-    const [firstName, setFirstName] = useState('');
-    const [middleName, setMiddleName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const router = useRouter();
 
-    const handleSignUp = () => {
-        router.replace('/SignIn');
+    const [isLoading, setIsLoading] = useState(false);
+
+
+
+    const {
+        control,
+        handleSubmit,
+        formState: { errors },
+    } = useForm<SignUpFormData>({
+        resolver: zodResolver(signUpSchema),
+        defaultValues: {
+            firstName: '',
+            middleName: '',
+            lastName: '',
+            email: '',
+            password: '',
+        },
+    });
+
+    const onSubmit = async (data: SignUpFormData) => {
+        setIsLoading(true);
+        try {
+            const response = await createUser(data);
+            console.log(response)
+            if (response.success) {
+                Toast.show({
+                    type: 'success',
+                    text1: 'Success',
+                    text2: response.message || 'Your account has been created successfully!',
+                    position: 'bottom'
+                });
+            } else {
+                throw new Error(response.message);
+            }
+        } catch (error: any) {
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: error.response?.data?.message || 'Failed to create account. Please try again.',
+                position: 'bottom'
+            });
+            console.error(error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -30,30 +89,109 @@ const SignUpScreen: React.FC = () => {
                     <Text style={styles.subtitle}>Start Your Language Learning Journey</Text>
 
                     <View style={styles.inputGroup}>
-                        <Input
-                            placeholder="First Name"
-                            value={firstName}
-                            onChangeText={setFirstName}
-                            autoCapitalize="words"
-                            style={styles.input}
+                        <Controller
+                            control={control}
+                            name="firstName"
+                            render={({ field: { onChange, value } }) => (
+                                <>
+                                    <Input
+                                        placeholder="First Name"
+                                        value={value}
+                                        onChangeText={onChange}
+                                        autoCapitalize="words"
+                                        style={styles.input}
+                                    />
+                                    {errors.firstName && (
+                                        <Text style={styles.errorText}>{errors.firstName.message}</Text>
+                                    )}
+                                </>
+                            )}
                         />
-                        <Input
-                            placeholder="Middle Name"
-                            value={middleName}
-                            onChangeText={setMiddleName}
-                            autoCapitalize="words"
-                            style={styles.input}
+
+                        <Controller
+                            control={control}
+                            name="middleName"
+                            render={({ field: { onChange, value } }) => (
+                                <Input
+                                    placeholder="Middle Name (Optional)"
+                                    value={value}
+                                    onChangeText={onChange}
+                                    autoCapitalize="words"
+                                    style={styles.input}
+                                />
+                            )}
                         />
-                        <Input placeholder="Last Name" value={lastName} onChangeText={setLastName} autoCapitalize="words" style={styles.input} />
-                        <Input placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" style={styles.input} />
-                        <Input placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry style={styles.input} />
+
+                        <Controller
+                            control={control}
+                            name="lastName"
+                            render={({ field: { onChange, value } }) => (
+                                <>
+                                    <Input
+                                        placeholder="Last Name"
+                                        value={value}
+                                        onChangeText={onChange}
+                                        autoCapitalize="words"
+                                        style={styles.input}
+                                    />
+                                    {errors.lastName && (
+                                        <Text style={styles.errorText}>{errors.lastName.message}</Text>
+                                    )}
+                                </>
+                            )}
+                        />
+
+                        <Controller
+                            control={control}
+                            name="email"
+                            render={({ field: { onChange, value } }) => (
+                                <>
+                                    <Input
+                                        placeholder="Email"
+                                        value={value}
+                                        onChangeText={onChange}
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                        style={styles.input}
+                                    />
+                                    {errors.email && (
+                                        <Text style={styles.errorText}>{errors.email.message}</Text>
+                                    )}
+                                </>
+                            )}
+                        />
+
+                        <Controller
+                            control={control}
+                            name="password"
+                            render={({ field: { onChange, value } }) => (
+                                <>
+                                    <Input
+                                        placeholder="Password"
+                                        value={value}
+                                        onChangeText={onChange}
+                                        secureTextEntry
+                                        style={styles.input}
+                                    />
+                                    {errors.password && (
+                                        <Text style={styles.errorText}>{errors.password.message}</Text>
+                                    )}
+                                </>
+                            )}
+                        />
                     </View>
 
                     <TouchableOpacity
-                        style={styles.signInButton}
-                        onPress={handleSignUp}
+                        style={[
+                            styles.signInButton,
+                            isLoading && styles.disabledButton
+                        ]}
+                        onPress={handleSubmit(onSubmit)}
+                        disabled={isLoading}
                     >
-                        <Text style={styles.signInButtonText}>Create Account</Text>
+                        <Text style={styles.signInButtonText}>
+                            {isLoading ? 'Creating Account...' : 'Create Account'}
+                        </Text>
                     </TouchableOpacity>
                 </View>
 
@@ -66,6 +204,7 @@ const SignUpScreen: React.FC = () => {
                     </Text>
                 </View>
             </View>
+            <Toast />
         </View>
     );
 };
@@ -153,6 +292,15 @@ const styles = StyleSheet.create({
     linkText: {
         color: '#4CAF50',
         fontWeight: 'bold',
+    },
+    errorText: {
+        color: '#ff0000',
+        fontSize: 12,
+        marginTop: 4,
+    },
+    disabledButton: {
+        backgroundColor: '#a5d6a7',  // lighter green
+        opacity: 0.7,
     },
 });
 

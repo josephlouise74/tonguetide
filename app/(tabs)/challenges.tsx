@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Challenge {
     id: string;
@@ -10,10 +12,12 @@ interface Challenge {
     difficulty: 'easy' | 'medium' | 'hard';
     points: number;
     completed: boolean;
+    scoreValue: number;
 }
 
 export default function ChallengeScreen() {
-    const [challenges] = useState<Challenge[]>([
+    const { completedChallengeId } = useLocalSearchParams() as { completedChallengeId?: string };
+    const [challenges, setChallenges] = useState<Challenge[]>([
         {
             id: '1',
             title: 'Daily Vocabulary',
@@ -21,6 +25,7 @@ export default function ChallengeScreen() {
             difficulty: 'easy',
             points: 10,
             completed: false,
+            scoreValue: 1,
         },
         {
             id: '2',
@@ -29,6 +34,7 @@ export default function ChallengeScreen() {
             difficulty: 'medium',
             points: 15,
             completed: false,
+            scoreValue: 2,
         },
         {
             id: '3',
@@ -36,20 +42,33 @@ export default function ChallengeScreen() {
             description: 'Record 2 pronunciation exercises',
             difficulty: 'hard',
             points: 20,
-            completed: true,
+            completed: false,
+            scoreValue: 2,
         },
     ]);
 
     const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
 
-    const getDifficultyColor = (difficulty: Challenge['difficulty']) => {
+    const getDifficultyColor = (difficulty: Challenge['difficulty']): string => {
         switch (difficulty) {
             case 'easy':
-                return '#4CAF50';
+                return '#A5D6A7';
             case 'medium':
-                return '#FFA726';
+                return '#FFCC80';
             case 'hard':
-                return '#EF5350';
+                return '#EF9A9A';
+            default:
+                return '#ccc';
+        }
+    };
+
+    const handleStartChallenge = (challengeId: string) => {
+        if (challengeId === '1') {
+            router.push('/components/DailyTask');
+        } else if (challengeId === '2') {
+            router.push('/components/GrammarChallenge');
+        } else if (challengeId === '3') {
+            router.push('/components/SpeakingPractice');
         }
     };
 
@@ -60,9 +79,14 @@ export default function ChallengeScreen() {
                     <Ionicons name="chevron-back" size={24} color="#007AFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Daily Challenges</Text>
-                <TouchableOpacity onPress={() => setIsInfoModalVisible(true)}>
-                    <Ionicons name="information-circle-outline" size={24} color="#007AFF" />
-                </TouchableOpacity>
+                <View style={styles.headerButtons}>
+                    <TouchableOpacity
+                        onPress={() => setIsInfoModalVisible(true)}
+                        style={styles.infoButton}
+                    >
+                        <Ionicons name="information-circle-outline" size={24} color="#007AFF" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <Modal
@@ -74,7 +98,6 @@ export default function ChallengeScreen() {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>Daily Challenges Guide</Text>
-
                         <ScrollView style={styles.modalScroll}>
                             <Text style={styles.modalStep}>Challenge Difficulty</Text>
                             <Text style={styles.modalText}>
@@ -82,31 +105,7 @@ export default function ChallengeScreen() {
                                 • Orange (Medium): Intermediate level, 15 points{'\n'}
                                 • Red (Hard): Advanced challenges, 20 points
                             </Text>
-
-                            <Text style={styles.modalStep}>How to Complete</Text>
-                            <Text style={styles.modalText}>
-                                1. Choose a challenge that matches your skill level{'\n'}
-                                2. Tap the "Start" button to begin{'\n'}
-                                3. Complete the challenge requirements{'\n'}
-                                4. Earn points upon completion
-                            </Text>
-
-                            <Text style={styles.modalStep}>Daily Progress</Text>
-                            <Text style={styles.modalText}>
-                                • Challenges reset every 24 hours{'\n'}
-                                • Track your progress in the bar at the top{'\n'}
-                                • Aim to complete all challenges for bonus rewards{'\n'}
-                                • Completed challenges are marked with a green checkmark
-                            </Text>
-
-                            <Text style={styles.modalStep}>Tips</Text>
-                            <Text style={styles.modalText}>
-                                • Start with easier challenges to build confidence{'\n'}
-                                • Complete challenges daily to maintain your streak{'\n'}
-                                • Points earned contribute to your overall level
-                            </Text>
                         </ScrollView>
-
                         <TouchableOpacity
                             style={styles.closeButton}
                             onPress={() => setIsInfoModalVisible(false)}
@@ -117,29 +116,24 @@ export default function ChallengeScreen() {
                 </View>
             </Modal>
 
-            <View style={styles.progressSection}>
-                <Text style={styles.progressTitle}>Today's Progress</Text>
-                <View style={styles.progressBar}>
-                    <View style={[styles.progressFill, { width: '33%' }]} />
-                </View>
-                <Text style={styles.progressText}>1/3 Challenges Completed</Text>
-            </View>
-
             <ScrollView style={styles.challengeList}>
                 {challenges.map((challenge) => (
                     <TouchableOpacity
                         key={challenge.id}
                         style={[
                             styles.challengeCard,
-                            challenge.completed && styles.completedChallenge
+                            challenge.completed && styles.completedChallenge,
                         ]}
+                        onPress={() => handleStartChallenge(challenge.id)}
                     >
                         <View style={styles.challengeHeader}>
                             <Text style={styles.challengeTitle}>{challenge.title}</Text>
-                            <View style={[
-                                styles.difficultyBadge,
-                                { backgroundColor: getDifficultyColor(challenge.difficulty) }
-                            ]}>
+                            <View
+                                style={[
+                                    styles.difficultyBadge,
+                                    { backgroundColor: getDifficultyColor(challenge.difficulty) },
+                                ]}
+                            >
                                 <Text style={styles.difficultyText}>
                                     {challenge.difficulty.toUpperCase()}
                                 </Text>
@@ -151,9 +145,9 @@ export default function ChallengeScreen() {
                             {challenge.completed ? (
                                 <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
                             ) : (
-                                <TouchableOpacity style={styles.startButton}>
+                                <View style={styles.startButton}>
                                     <Text style={styles.startButtonText}>Start</Text>
-                                </TouchableOpacity>
+                                </View>
                             )}
                         </View>
                     </TouchableOpacity>
@@ -166,7 +160,7 @@ export default function ChallengeScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#f9f9f9',
         paddingTop: 60,
     },
     header: {
@@ -175,93 +169,85 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        height: 56,
         borderBottomWidth: 1,
         borderBottomColor: '#eee',
     },
     headerTitle: {
         fontSize: 20,
         fontWeight: 'bold',
+        color: '#333',
     },
-    progressSection: {
-        padding: 20,
-        backgroundColor: '#fff',
-        marginBottom: 10,
+    headerButtons: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
-    progressTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 10,
-    },
-    progressBar: {
-        height: 10,
-        backgroundColor: '#eee',
-        borderRadius: 5,
-        overflow: 'hidden',
-    },
-    progressFill: {
-        height: '100%',
-        backgroundColor: '#4CAF50',
-    },
-    progressText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginTop: 10,
+    infoButton: {
+        marginLeft: 16,
     },
     challengeList: {
-        padding: 20,
+        marginTop: 40,
+        paddingHorizontal: 20,
     },
     challengeCard: {
         backgroundColor: '#fff',
-        borderRadius: 5,
+        borderRadius: 10,
         padding: 16,
-        marginBottom: 10,
+        marginBottom: 12,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 4,
     },
     challengeHeader: {
         flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 10,
+        alignItems: 'center',
+        marginBottom: 8,
     },
     challengeTitle: {
         fontSize: 18,
         fontWeight: 'bold',
+        color: '#333',
     },
     difficultyBadge: {
-        padding: 4,
-        borderRadius: 5,
-        marginLeft: 10,
+        paddingVertical: 4,
+        paddingHorizontal: 10,
+        borderRadius: 12,
     },
     difficultyText: {
-        fontSize: 16,
-        fontWeight: 'bold',
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#fff',
     },
     challengeDescription: {
         fontSize: 16,
-        color: '#333',
+        color: '#555',
+        marginBottom: 8,
     },
     challengeFooter: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginTop: 10,
     },
     pointsText: {
         fontSize: 16,
         fontWeight: 'bold',
+        color: '#4CAF50',
     },
     startButton: {
         backgroundColor: '#007AFF',
-        padding: 8,
-        borderRadius: 5,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        alignItems: 'center',
     },
     startButtonText: {
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: '600',
         color: '#fff',
     },
     completedChallenge: {
-        backgroundColor: '#eee',
+        backgroundColor: '#E0E0E0',
     },
     modalOverlay: {
         flex: 1,
@@ -279,29 +265,31 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         marginBottom: 10,
+        color: '#333',
     },
     modalScroll: {
-        maxHeight: 300,
+        maxHeight: 200,
+        marginBottom: 20,
     },
     modalStep: {
         fontSize: 18,
         fontWeight: 'bold',
         marginBottom: 5,
+        color: '#333',
     },
     modalText: {
         fontSize: 16,
-        color: '#333',
+        color: '#555',
     },
     closeButton: {
         backgroundColor: '#007AFF',
-        padding: 8,
-        borderRadius: 5,
+        paddingVertical: 8,
+        borderRadius: 8,
         alignItems: 'center',
-        marginTop: 10,
     },
     closeButtonText: {
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: '600',
         color: '#fff',
     },
 });

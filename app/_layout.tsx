@@ -2,6 +2,9 @@
 import { Slot, useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { StudyListProvider } from './components/StudyList';
+import { ThemeProvider } from './components/ThemeContext';
+import Colors from '../src/constants/Colors';
 
 export default function RootLayout() {
     const [showWelcome, setShowWelcome] = useState(true);
@@ -30,7 +33,13 @@ export default function RootLayout() {
         );
     }
 
-    return <Slot />; // Render child routes once welcome screen is dismissed
+    return (
+        <ThemeProvider>
+            <StudyListProvider>
+                <Slot />
+            </StudyListProvider>
+        </ThemeProvider>
+    );
 }
 
 const styles = StyleSheet.create({

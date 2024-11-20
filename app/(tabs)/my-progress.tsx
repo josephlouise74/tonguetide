@@ -1,8 +1,9 @@
 // app/(tabs)/progress.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface ProgressStats {
     category: string;
@@ -11,25 +12,118 @@ interface ProgressStats {
     icon: keyof typeof Ionicons.glyphMap;
 }
 
+interface Achievement {
+    id: string;
+    title: string;
+    description: string;
+    requirement: number;
+    completed: boolean;
+}
+
 export default function ProgressScreen() {
     const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
+    const [progressStats, setProgressStats] = useState<ProgressStats[]>([]);
+    const [achievements, setAchievements] = useState<Achievement[]>([]);
+    const [overallProgress, setOverallProgress] = useState(0);
 
-    const progressStats: ProgressStats[] = [
-        { category: 'Vocabulary Learned', count: 125, total: 500, icon: 'book-outline' },
-        { category: 'Exercises Completed', count: 45, total: 100, icon: 'fitness-outline' },
-        { category: 'Speaking Challenges', count: 15, total: 30, icon: 'mic-outline' },
-        { category: 'Daily Streaks', count: 7, total: 7, icon: 'flame-outline' },
-    ];
+    useEffect(() => {
+        loadProgress();
+    }, []);
 
-    const achievements = [
-        { title: 'Vocabulary Master', description: '100 words learned', completed: true },
-        { title: 'Speaking Pro', description: '10 speaking challenges completed', completed: true },
-        { title: 'Perfect Week', description: '7 days streak', completed: true },
-        { title: 'Exercise Expert', description: '50 exercises completed', completed: false },
-    ];
+    const loadProgress = async () => {
+        try {
+            // Load learned vocabulary items
+            const learnedItems = await AsyncStorage.getItem('learnedItems');
+            const parsedLearnedItems = learnedItems ? JSON.parse(learnedItems) : [];
+
+            // Load completed exercises
+            const completedExercises = await AsyncStorage.getItem('completedExercises');
+            const parsedExercises = completedExercises ? JSON.parse(completedExercises) : [];
+
+            // Load speaking challenges
+            const speakingChallenges = await AsyncStorage.getItem('speakingChallenges');
+            const parsedChallenges = speakingChallenges ? JSON.parse(speakingChallenges) : [];
+
+            // Load daily streaks
+            const dailyProgress = await AsyncStorage.getItem('dailyProgress');
+            const parsedDailyProgress = dailyProgress ? JSON.parse(dailyProgress) : { streak: 0 };
+
+            // Update progress stats
+            const updatedStats: ProgressStats[] = [
+                {
+                    category: 'Vocabulary Learned',
+                    count: parsedLearnedItems.length,
+                    total: 500,
+                    icon: 'book-outline'
+                },
+                {
+                    category: 'Exercises Completed',
+                    count: parsedExercises.length,
+                    total: 100,
+                    icon: 'fitness-outline'
+                },
+                {
+                    category: 'Speaking Challenges',
+                    count: parsedChallenges.length,
+                    total: 30,
+                    icon: 'mic-outline'
+                },
+                {
+                    category: 'Daily Streaks',
+                    count: parsedDailyProgress.streak,
+                    total: 7,
+                    icon: 'flame-outline'
+                }
+            ];
+
+            setProgressStats(updatedStats);
+
+            // Calculate overall progress
+            const totalProgress = updatedStats.reduce((acc, stat) =>
+                acc + (stat.count / stat.total), 0) / updatedStats.length * 100;
+            setOverallProgress(Math.round(totalProgress));
+
+            // Update achievements
+            const updatedAchievements = [
+                {
+                    id: 'vocab100',
+                    title: 'Vocabulary Master',
+                    description: '100 words learned',
+                    requirement: 100,
+                    completed: parsedLearnedItems.length >= 100
+                },
+                {
+                    id: 'speaking10',
+                    title: 'Speaking Pro',
+                    description: '10 speaking challenges completed',
+                    requirement: 10,
+                    completed: parsedChallenges.length >= 10
+                },
+                {
+                    id: 'streak7',
+                    title: 'Perfect Week',
+                    description: '7 days streak',
+                    requirement: 7,
+                    completed: parsedDailyProgress.streak >= 7
+                },
+                {
+                    id: 'exercise50',
+                    title: 'Exercise Expert',
+                    description: '50 exercises completed',
+                    requirement: 50,
+                    completed: parsedExercises.length >= 50
+                }
+            ];
+
+            setAchievements(updatedAchievements);
+
+        } catch (error) {
+            console.error('Error loading progress:', error);
+        }
+    };
 
     const renderProgressBar = (count: number, total: number) => {
-        const percentage = (count / total) * 100;
+        const percentage = Math.min((count / total) * 100, 100);
         return (
             <View style={styles.progressTrack}>
                 <View style={[styles.progressFill, { width: `${percentage}%` }]} />
@@ -91,8 +185,8 @@ export default function ProgressScreen() {
 
             <View style={styles.overallProgress}>
                 <Text style={styles.sectionTitle}>Overall Progress</Text>
-                {renderProgressBar(65, 100)}
-                <Text style={styles.progressText}>65% Complete</Text>
+                {renderProgressBar(overallProgress, 100)}
+                <Text style={styles.progressText}>{overallProgress}% Complete</Text>
             </View>
 
             <View style={styles.statsContainer}>

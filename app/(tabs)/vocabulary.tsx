@@ -4,6 +4,9 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from 'r
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Link } from 'expo-router';
+import { vocabulary } from '../data/utils';
+import { useStudyList } from '../components/StudyList';
+import { useLearnedItems } from '../components/MarkAsLearned';
 
 interface VocabularyItem {
     id: string;
@@ -21,34 +24,8 @@ export default function VocabularyScreen() {
     const [showSearch, setShowSearch] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-
-    const vocabulary = [
-        { id: '1', word: 'Hello', definition: 'A greeting' },
-        { id: '2', word: 'Goodbye', definition: 'A farewell' },
-        { id: '3', word: 'Thank you', definition: 'Expression of gratitude' },
-        { id: '4', word: 'Please', definition: 'Polite request' },
-        { id: '5', word: 'Excuse me', definition: 'Polite phrase used to get attention or apologize' },
-        { id: '6', word: 'Good morning', definition: 'Morning greeting' },
-        { id: '7', word: 'Good evening', definition: 'Evening greeting' },
-        { id: '8', word: 'Nice to meet you', definition: 'Polite phrase when meeting someone new' },
-        { id: '9', word: 'How are you?', definition: 'Common greeting asking about wellbeing' },
-        { id: '10', word: 'You\'re welcome', definition: 'Polite response to thank you' },
-        { id: '11', word: 'Sorry', definition: 'Expression of apology or regret' },
-        { id: '12', word: 'Congratulations', definition: 'Expression of praise for achievement' },
-        { id: '13', word: 'Take care', definition: 'Friendly farewell expressing concern' },
-        { id: '14', word: 'See you later', definition: 'Casual farewell indicating future meeting' },
-        { id: '15', word: 'Have a nice day', definition: 'Friendly farewell wishing well' },
-        { id: '16', word: 'Good night', definition: 'Evening farewell before sleeping' },
-        { id: '17', word: 'Welcome', definition: 'Greeting to receive someone' },
-        { id: '18', word: 'Best wishes', definition: 'Expression of hope for someone\'s success or happiness' },
-        { id: '19', word: 'Get well soon', definition: 'Phrase expressing hope for recovery' },
-        { id: '20', word: 'Happy birthday', definition: 'Celebration greeting for someone\'s birthday' },
-        { id: '21', word: 'Good luck', definition: 'Wishing someone success' },
-        { id: '22', word: 'Cheers', definition: 'Casual greeting or toast' },
-        { id: '23', word: 'Have fun', definition: 'Wishing someone enjoyment' },
-        { id: '24', word: 'Safe travels', definition: 'Wishing someone a safe journey' },
-        { id: '25', word: 'Well done', definition: 'Expression of praise for achievement' }
-    ];
+    const { addToStudyList, removeFromStudyList, isInStudyList } = useStudyList();
+    const { addToLearned, removeFromLearned, isLearned, getProgress } = useLearnedItems();
 
     const filteredVocabulary = vocabulary.filter(item =>
         item.word.toLowerCase().includes(searchQuery.toLowerCase())
@@ -81,15 +58,60 @@ export default function VocabularyScreen() {
                 <View style={styles.actionButtons}>
                     <TouchableOpacity
                         style={[styles.actionButton, styles.studyButton,
-                        item.inStudyList && styles.activeButton]}>
+                        isInStudyList(item.id) && styles.activeButton]}
+                        onPress={(e) => {
+                            e.preventDefault(); // Prevent navigation
+                            if (isInStudyList(item.id)) {
+                                removeFromStudyList(item.id);
+                            } else {
+                                addToStudyList({
+                                    id: item.id,
+                                    word: item.word,
+                                    definition: item.definition,
+                                    audioUrl: item.audioUrl
+                                });
+                            }
+                        }}>
                         <Ionicons name="bookmark-outline" size={16} color="#fff" style={styles.buttonIcon} />
-                        <Text style={styles.buttonText}>Add to Study List</Text>
+                        <Text style={styles.buttonText}>
+                            {isInStudyList(item.id) ? 'Remove from Study' : 'Add to Study'}
+                        </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.actionButton, styles.learnedButton,
-                        item.isLearned && styles.activeButton]}>
-                        <Ionicons name="checkmark-circle-outline" size={16} color="#fff" style={styles.buttonIcon} />
-                        <Text style={styles.buttonText}>Mark as Learned</Text>
+                        style={[
+                            styles.actionButton,
+                            styles.learnedButton,
+                            isLearned(item.id) && styles.activeButton
+                        ]}
+                        onPress={(e) => {
+                            e.preventDefault();
+                            if (isLearned(item.id)) {
+                                removeFromLearned(item.id);
+                            } else {
+                                addToLearned({
+                                    id: item.id,
+                                    word: item.word,
+                                    definition: item.definition,
+                                    audioUrl: item.audioUrl
+                                });
+                            }
+                        }}>
+                        <View style={styles.learnedButtonContent}>
+                            <Ionicons
+                                name={isLearned(item.id) ? "checkmark-circle" : "checkmark-circle-outline"}
+                                size={16}
+                                color="#fff"
+                                style={styles.buttonIcon}
+                            />
+                            <Text style={styles.buttonText}>
+                                {isLearned(item.id) ? `Learned ${getProgress(item.id)}%` : 'Mark as Learned'}
+                            </Text>
+                        </View>
+                        {isLearned(item.id) && (
+                            <View style={styles.progressBar}>
+                                <View style={[styles.progressFill, { width: `${getProgress(item.id)}%` }]} />
+                            </View>
+                        )}
                     </TouchableOpacity>
                 </View>
             </TouchableOpacity>
@@ -126,21 +148,31 @@ export default function VocabularyScreen() {
         <View style={styles.container}>
             <View style={styles.header}>
                 {!showSearch ? (
-                    <>
+                    <View style={styles.headerContent}>
                         <TouchableOpacity
                             style={styles.backButton}
                             onPress={() => navigation.goBack()}>
                             <Ionicons name="chevron-back" size={24} color="#007AFF" />
                         </TouchableOpacity>
-                        <Text style={styles.headerTitle}>Vocabulary Builder</Text>
+
+                        <Text style={styles.headerTitle}>Vocabulary</Text>
+
                         <TouchableOpacity
                             style={styles.searchButton}
                             onPress={() => setShowSearch(true)}>
-                            <Ionicons name="search" size={24} color="#007AFF" />
+                            <Ionicons name="search-outline" size={24} color="#007AFF" />
                         </TouchableOpacity>
-                    </>
+                    </View>
                 ) : (
                     <View style={styles.searchContainer}>
+                        <TouchableOpacity
+                            style={styles.backButton}
+                            onPress={() => {
+                                setShowSearch(false);
+                                setSearchQuery('');
+                            }}>
+                            <Ionicons name="chevron-back" size={24} color="#007AFF" />
+                        </TouchableOpacity>
                         <TextInput
                             style={styles.searchInput}
                             placeholder="Search vocabulary..."
@@ -148,14 +180,13 @@ export default function VocabularyScreen() {
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                         />
-                        <TouchableOpacity
-                            style={styles.closeButton}
-                            onPress={() => {
-                                setShowSearch(false);
-                                setSearchQuery('');
-                            }}>
-                            <Ionicons name="close" size={24} color="#007AFF" />
-                        </TouchableOpacity>
+                        {searchQuery.length > 0 && (
+                            <TouchableOpacity
+                                style={styles.clearButton}
+                                onPress={() => setSearchQuery('')}>
+                                <Ionicons name="close-circle" size={20} color="#666" />
+                            </TouchableOpacity>
+                        )}
                     </View>
                 )}
             </View>
@@ -175,26 +206,58 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
-        paddingTop: 60,
+        paddingTop: 50,
     },
     header: {
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        height: 60,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+    },
+    headerContent: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        height: 56,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-    },
-    backButton: {
-        width: 40,
     },
     headerTitle: {
-        flex: 1,
-        textAlign: 'center',
         fontSize: 18,
         fontWeight: 'bold',
+        color: '#000',
+        flex: 1,
+        textAlign: 'center',
+        marginHorizontal: 16,
+    },
+    backButton: {
+        padding: 8,
+        marginLeft: -8,
+    },
+    searchButton: {
+        padding: 8,
+        marginRight: -8,
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+        gap: 8,
+    },
+    searchInput: {
+        flex: 1,
+        height: 36,
+        backgroundColor: '#f0f0f0',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingRight: 36,
+        fontSize: 16,
+    },
+    clearButton: {
+        position: 'absolute',
+        right: 8,
+        top: '50%',
+        transform: [{ translateY: -10 }],
     },
     contentContainer: {
         padding: 10,
@@ -266,39 +329,6 @@ const styles = StyleSheet.create({
     activeButton: {
         opacity: 0.7,
     },
-    searchButton: {
-        minWidth: 60,
-        alignItems: 'flex-end',
-    },
-    progressBar: {
-        height: 10,
-        backgroundColor: '#ddd',
-        borderRadius: 5,
-        marginTop: 10,
-    },
-    progress: {
-        height: '100%',
-        backgroundColor: '#4CAF50',
-        borderRadius: 5,
-    },
-    searchContainer: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 8,
-    },
-    searchInput: {
-        flex: 1,
-        height: 36,
-        backgroundColor: '#f0f0f0',
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        marginRight: 8,
-        fontSize: 16,
-    },
-    closeButton: {
-        padding: 4,
-    },
     paginationContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -330,5 +360,25 @@ const styles = StyleSheet.create({
     },
     disabledText: {
         color: '#ccc',
+    },
+    learnedButtonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    progressBar: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 3,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderBottomLeftRadius: 8,
+        borderBottomRightRadius: 8,
+    },
+    progressFill: {
+        height: '100%',
+        backgroundColor: 'rgba(255,255,255,0.8)',
+        borderRadius: 8,
     },
 });

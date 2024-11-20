@@ -15,7 +15,7 @@ interface VocabularyDetailProps {
     inStudyList?: boolean;
 }
 
-export default function VocabularyDetail({
+const VocabularyDetail: React.FC<VocabularyDetailProps> = ({
     word,
     definition,
     examples = [],
@@ -25,61 +25,79 @@ export default function VocabularyDetail({
     onMarkAsLearned,
     isLearned,
     inStudyList,
-}: VocabularyDetailProps) {
+}) => {
     return (
         <ScrollView style={styles.container}>
             <View style={styles.wordSection}>
                 <View style={styles.wordHeader}>
                     <Text style={styles.word}>{word}</Text>
-                    <TouchableOpacity onPress={onPlayAudio} style={styles.audioButton}>
-                        <Ionicons name="volume-high" size={24} color="#007AFF" />
-                    </TouchableOpacity>
+                    {onPlayAudio && (
+                        <TouchableOpacity onPress={onPlayAudio} style={styles.audioButton}>
+                            <Ionicons name="volume-high" size={24} color="#007AFF" />
+                        </TouchableOpacity>
+                    )}
                 </View>
                 {pronunciation && (
                     <Text style={styles.pronunciation}>/{pronunciation}/</Text>
                 )}
             </View>
 
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Definition</Text>
+            <Section title="Definition">
                 <Text style={styles.definition}>{definition}</Text>
-            </View>
+            </Section>
 
             {examples.length > 0 && (
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Examples</Text>
+                <Section title="Examples">
                     {examples.map((example, index) => (
                         <Text key={index} style={styles.example}>
                             • {example}
                         </Text>
                     ))}
-                </View>
+                </Section>
             )}
 
             <View style={styles.actionButtons}>
-                <TouchableOpacity
-                    style={[styles.actionButton, styles.studyButton, inStudyList && styles.activeButton]}
+                <ActionButton
+                    title={inStudyList ? 'In Study List' : 'Add to Study List'}
+                    icon="bookmark-outline"
                     onPress={onAddToStudyList}
-                >
-                    <Ionicons name="bookmark-outline" size={20} color="#fff" />
-                    <Text style={styles.buttonText}>
-                        {inStudyList ? 'In Study List' : 'Add to Study List'}
-                    </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.actionButton, styles.learnedButton, isLearned && styles.activeButton]}
+                    isActive={inStudyList}
+                    style={styles.studyButton}
+                />
+                <ActionButton
+                    title={isLearned ? 'Learned' : 'Mark as Learned'}
+                    icon="checkmark-circle-outline"
                     onPress={onMarkAsLearned}
-                >
-                    <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-                    <Text style={styles.buttonText}>
-                        {isLearned ? 'Learned' : 'Mark as Learned'}
-                    </Text>
-                </TouchableOpacity>
+                    isActive={isLearned}
+                    style={styles.learnedButton}
+                />
             </View>
         </ScrollView>
     );
-}
+};
+
+const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+    <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {children}
+    </View>
+);
+
+const ActionButton: React.FC<{
+    title: string;
+    icon: string;
+    onPress?: () => void;
+    isActive?: boolean;
+    style?: object;
+}> = ({ title, icon, onPress, isActive, style }) => (
+    <TouchableOpacity
+        style={[styles.actionButton, style, isActive && styles.activeButton]}
+        onPress={onPress}
+    >
+        <Ionicons name={icon as any} size={20} color="#fff" />
+        <Text style={styles.buttonText}>{title}</Text>
+    </TouchableOpacity>
+);
 
 const styles = StyleSheet.create({
     container: {
@@ -162,3 +180,5 @@ const styles = StyleSheet.create({
         opacity: 0.7,
     },
 });
+
+export default VocabularyDetail;

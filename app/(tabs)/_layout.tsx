@@ -13,7 +13,7 @@ export default function TabLayout() {
         <Tabs
             screenOptions={{
                 headerShown: true,
-                tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+                tabBarActiveTintColor: Colors[colorScheme ?? 'light'].primary,
             }}
         >
             {/* Home tab with custom icon */}
@@ -21,6 +21,7 @@ export default function TabLayout() {
                 name="home"
                 options={{
                     title: 'Home',
+                    headerShown: false, // Changed this to hide the header completely
                     tabBarIcon: ({ color }) => (
                         <Ionicons name="home-outline" color={color} size={TAB_ICON_SIZE} />
                     ),
@@ -58,7 +59,7 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
-                name="vocaItem"
+                name="vocaItem/[id]"
                 options={{
                     title: 'Vocabulary Item',
                     headerShown: false,
@@ -66,19 +67,11 @@ export default function TabLayout() {
                     tabBarButton: () => null,
                 }}
             />
+
             <Tabs.Screen
                 name="vocabulary"
                 options={{
                     title: 'Daily Vocabulary',
-                    headerShown: false,
-                    headerTitle: '',
-                    tabBarButton: () => null,
-                }}
-            />
-            <Tabs.Screen
-                name="speaking-challenge"
-                options={{
-                    title: 'Speaking Challenge',
                     headerShown: false,
                     headerTitle: '',
                     tabBarButton: () => null,

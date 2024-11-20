@@ -1,14 +1,16 @@
 // app/(tabs)/language-exchange.tsx
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Modal, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
 const LanguageExchangeScreen: React.FC = () => {
     const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
+    const [isComingSoonModalVisible, setIsComingSoonModalVisible] = useState(false);
 
     return (
         <View style={styles.container}>
+            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="chevron-back" size={24} color="#007AFF" />
@@ -19,6 +21,7 @@ const LanguageExchangeScreen: React.FC = () => {
                 </TouchableOpacity>
             </View>
 
+            {/* Information Modal */}
             <Modal
                 animationType="slide"
                 transparent={true}
@@ -28,13 +31,11 @@ const LanguageExchangeScreen: React.FC = () => {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>Language Exchange Guide</Text>
-
                         <ScrollView style={styles.modalScroll}>
                             <Text style={styles.modalStep}>What is Language Exchange?</Text>
                             <Text style={styles.modalText}>
                                 Language exchange is a method where two people learning each other's native languages help one another practice and improve their language skills.
                             </Text>
-
                             <Text style={styles.modalStep}>How It Works</Text>
                             <Text style={styles.modalText}>
                                 1. Create your profile with your native language and the language you're learning{'\n'}
@@ -42,7 +43,6 @@ const LanguageExchangeScreen: React.FC = () => {
                                 3. Connect with partners who match your interests{'\n'}
                                 4. Schedule practice sessions via chat or video call
                             </Text>
-
                             <Text style={styles.modalStep}>Best Practices</Text>
                             <Text style={styles.modalText}>
                                 • Dedicate equal time to both languages{'\n'}
@@ -50,7 +50,6 @@ const LanguageExchangeScreen: React.FC = () => {
                                 • Set clear goals for each session{'\n'}
                                 • Stay committed to regular practice
                             </Text>
-
                             <Text style={styles.modalStep}>Safety Tips</Text>
                             <Text style={styles.modalText}>
                                 • Keep personal information private{'\n'}
@@ -59,7 +58,6 @@ const LanguageExchangeScreen: React.FC = () => {
                                 • Meet virtually first before any in-person meetings
                             </Text>
                         </ScrollView>
-
                         <TouchableOpacity
                             style={styles.closeButton}
                             onPress={() => setIsInfoModalVisible(false)}
@@ -70,19 +68,45 @@ const LanguageExchangeScreen: React.FC = () => {
                 </View>
             </Modal>
 
+            {/* Coming Soon Modal */}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={isComingSoonModalVisible}
+                onRequestClose={() => setIsComingSoonModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.comingSoonModalContent}>
+                        <Ionicons name="construct-outline" size={64} color="#4A90E2" />
+                        <Text style={styles.comingSoonTitle}>Coming Soon!</Text>
+                        <Text style={styles.comingSoonText}>
+                            We're working hard to bring the "Find Partners" feature to you. Stay tuned for updates!
+                        </Text>
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={() => setIsComingSoonModalVisible(false)}
+                        >
+                            <Text style={styles.closeButtonText}>Okay</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Main Content */}
             <View style={styles.contentContainer}>
                 <View style={styles.iconContainer}>
                     <Ionicons name="earth" size={80} color="#4A90E2" />
                 </View>
-
                 <View style={styles.textContainer}>
                     <Text style={styles.title}>Language Exchange</Text>
                     <Text style={styles.description}>
                         Connect with people around the world to practice and exchange languages.
                     </Text>
                 </View>
-
-                <TouchableOpacity style={styles.button}>
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => setIsComingSoonModalVisible(true)}
+                >
                     <Text style={styles.buttonText}>Find Partners</Text>
                 </TouchableOpacity>
             </View>
@@ -113,6 +137,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontSize: 18,
         fontWeight: 'bold',
+        color: '#333',
     },
     contentContainer: {
         flex: 1,
@@ -184,22 +209,27 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: 'bold',
         marginBottom: 10,
+        color: '#333',
     },
     modalStep: {
         fontSize: 18,
         fontWeight: 'bold',
         marginBottom: 5,
+        color: '#007AFF',
     },
     modalText: {
         fontSize: 16,
         marginBottom: 10,
+        color: '#333',
+        lineHeight: 22,
     },
     closeButton: {
         backgroundColor: '#4A90E2',
         paddingVertical: 10,
         paddingHorizontal: 20,
         borderRadius: 30,
-        alignSelf: 'flex-end',
+        alignSelf: 'center',
+        marginTop: 20,
     },
     closeButtonText: {
         color: '#fff',
@@ -208,5 +238,26 @@ const styles = StyleSheet.create({
     },
     modalScroll: {
         maxHeight: 200,
+    },
+    comingSoonModalContent: {
+        backgroundColor: '#fff',
+        padding: 20,
+        borderRadius: 10,
+        width: '80%',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
+    comingSoonTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#4A90E2',
+        marginTop: 10,
+    },
+    comingSoonText: {
+        fontSize: 16,
+        color: '#333',
+        textAlign: 'center',
+        marginTop: 10,
+        lineHeight: 22,
     },
 });

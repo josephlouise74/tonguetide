@@ -1,18 +1,102 @@
 // SignIn.tsx
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import { Ionicons } from '@expo/vector-icons';
+import { useForm, Controller } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import Toast from 'react-native-toast-message';
+import { signIn } from '../api/UserApi';
+import { authMiddleware } from './authMiddleware';
+import useUserStore from '../zustandStore/useUserStore';
+
+// Define the validation schema
+const signInSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+type SignInFormData = z.infer<typeof signInSchema>;
 
 const SignInScreen: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const { setUser, setToken } = useUserStore();
 
-  const handleSignIn = () => {
-    router.replace('/(tabs)/home');
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignInFormData>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  useEffect(() => {
+    authMiddleware.requireGuest();
+  }, []);
+
+  const onSubmit = async (data: SignInFormData) => {
+    setIsLoading(true);
+    try {
+      const response = await signIn(data);
+      if (response.success) {
+        // Update Zustand store
+        setUser(response.user);
+        setToken(response.token);
+
+        // You can still keep these if needed for other purposes
+        await Promise.all([
+          authMiddleware.setToken(response.token),
+          authMiddleware.setUserData(response.user)
+        ]);
+
+        router.replace('/(tabs)/home');
+      }
+
+      if (!response.success) {
+        Toast.show({
+          type: 'error',
+          text1: 'Sign In Failed',
+          text2: response.message || 'Failed to sign in',
+          position: 'bottom',
+          visibilityTime: 4000,
+          autoHide: true,
+          topOffset: 30,
+          bottomOffset: 40,
+          onShow: () => console.log('Toast shown'),
+          onHide: () => console.log('Toast hidden'),
+          onPress: () => Toast.hide(),
+          props: {
+            uuid: 'unique-id'
+          }
+        });
+      }
+    } catch (error: any) {
+      console.log(error)
+      Toast.show({
+        type: 'error',
+        text1: 'Error Occurred',
+        text2: error.response?.data?.message || 'Failed to sign in. Please try again.',
+        position: 'bottom',
+        visibilityTime: 4000,
+        autoHide: true,
+        topOffset: 30,
+        bottomOffset: 40,
+        onPress: () => Toast.hide(),
+        props: {
+          uuid: 'error-id'
+        }
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -27,28 +111,54 @@ const SignInScreen: React.FC = () => {
           <Text style={styles.subtitle}>Your Journey to Language Mastery</Text>
 
           <View style={styles.inputGroup}>
-            <Input
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={styles.input}
+            <Controller
+              control={control}
+              name="email"
+              render={({ field: { onChange, value } }) => (
+                <>
+                  <Input
+                    placeholder="Email"
+                    value={value}
+                    onChangeText={onChange}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    style={styles.input}
+                  />
+                  {errors.email && (
+                    <Text style={styles.errorText}>{errors.email.message}</Text>
+                  )}
+                </>
+              )}
             />
-            <Input
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              style={styles.input}
+
+            <Controller
+              control={control}
+              name="password"
+              render={({ field: { onChange, value } }) => (
+                <>
+                  <Input
+                    placeholder="Password"
+                    value={value}
+                    onChangeText={onChange}
+                    secureTextEntry
+                    style={styles.input}
+                  />
+                  {errors.password && (
+                    <Text style={styles.errorText}>{errors.password.message}</Text>
+                  )}
+                </>
+              )}
             />
           </View>
 
           <TouchableOpacity
-            style={styles.signInButton}
-            onPress={handleSignIn}
+            style={[styles.signInButton, isLoading && styles.disabledButton]}
+            onPress={handleSubmit(onSubmit)}
+            disabled={isLoading}
           >
-            <Text style={styles.signInButtonText}>Sign In</Text>
+            <Text style={styles.signInButtonText}>
+              {isLoading ? 'Signing In...' : 'Sign In'}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -61,6 +171,7 @@ const SignInScreen: React.FC = () => {
           </Text>
         </View>
       </View>
+      <Toast />
     </View>
   );
 };
@@ -148,6 +259,27 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#4CAF50',
     fontWeight: 'bold',
+  },
+  errorText: {
+    color: '#ff0000',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  disabledButton: {
+    backgroundColor: '#a5d6a7',
+    opacity: 0.7,
+  },
+  toastContainer: {
+    width: '90%',
+    borderRadius: 8,
+    backgroundColor: '#FFF',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3
   },
 });
 
