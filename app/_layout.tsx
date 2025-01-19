@@ -13,7 +13,7 @@ export default function RootLayout() {
     useEffect(() => {
         // Ensure welcome screen is shown only on the first load
         if (!showWelcome) {
-            router.replace('/(auth)/SignIn'); // Navigate once welcome screen is dismissed
+            router.replace('/(tabs)/home'); // Navigate once welcome screen is dismissed
         }
     }, [showWelcome]);
 

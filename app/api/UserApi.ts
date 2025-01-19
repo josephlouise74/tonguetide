@@ -25,8 +25,9 @@ interface CreateUserRequest {
 
 export const createUser = async (data: CreateUserRequest): Promise<{ success: boolean; message: string; data: any }> => {
     try {
+        ``
         const response = await axios.post<{ success: boolean; message: string; data: any }>(
-            `http://192.168.0.124:8000/api/my/user/signup`,
+            `http://192.168.1.71:8000/api/my/user/signup`,
             data
         );
         return response.data;
@@ -38,7 +39,7 @@ export const createUser = async (data: CreateUserRequest): Promise<{ success: bo
 export const getAllUser = async (): Promise<{ success: boolean; message: string; data: any }> => {
     try {
         const response = await axios.get<{ success: boolean; message: string; data: any }>(
-            `http://192.168.0.124:8000/api/my/user/`,
+            `http://192.168.1.71:8000/api/my/user/`,
         );
         return response.data;
     } catch (error) {
@@ -49,7 +50,7 @@ export const getAllUser = async (): Promise<{ success: boolean; message: string;
 export const getCurrentUser = async (id: string): Promise<{ success: boolean; message: string; data: any }> => {
     try {
         const response = await axios.get<{ success: boolean; message: string; data: any }>(
-            `http://192.168.0.124:8000/api/my/user/${id}`,
+            `http://192.168.1.71:8000/api/my/user/${id}`,
         );
         return response.data;
     } catch (error) {
@@ -62,7 +63,7 @@ export const updateCurrentUser = async (id: string, data: any): Promise<{ succes
     try {
         console.log("idssss", id)
         const response = await axios.put<{ success: boolean; message: string; data: any }>(
-            `http://192.168.0.124:8000/api/my/user/update/${id}`,
+            `http://192.168.1.71:8000/api/my/user/update/${id}`,
             data
         );
         return response.data;
@@ -76,7 +77,7 @@ export const updateCurrentUser = async (id: string, data: any): Promise<{ succes
 export const signIn = async (data: any): Promise<{ success: boolean; token: string; message: string; data: any; user: any }> => {
     try {
         const response = await axios.post<{ success: boolean; token: string; message: string; data: any; user: any }>(
-            `http://192.168.0.124:8000/api/my/user/signin`,
+            `http://192.168.1.71:8000/api/my/user/signin`,
             data
         );
         return response.data;
@@ -89,7 +90,7 @@ export const signIn = async (data: any): Promise<{ success: boolean; token: stri
 export const signOut = async (): Promise<{ success: boolean; message: string; data: any }> => {
     try {
         const response = await axios.post<{ success: boolean; message: string; data: any }>(
-            `http://192.168.0.124:8000/api/my/user/signout`,
+            `http://192.168.1.71:8000/api/my/user/signout`,
 
         );
         return response.data;
